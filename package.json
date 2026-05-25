@@ -1,0 +1,30 @@
+{
+  "name": "fukidashi-cleaner",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "yarn@4.15.0",
+  "main": "dist/main/main/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.main.json && vite build --config vite.renderer.config.ts",
+    "dev": "concurrently \"vite --config vite.renderer.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
+    "build:renderer": "vite build --config vite.renderer.config.ts",
+    "start": "yarn build && electron ."
+  },
+  "dependencies": {
+    "electron": "^42.2.0",
+    "onnxruntime-node": "^1.26.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "concurrently": "^9.2.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "wait-on": "^9.0.10"
+  }
+}
