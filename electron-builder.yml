@@ -1,0 +1,30 @@
+appId: com.fukidashi.cleaner
+productName: Fukidashi Cleaner
+
+directories:
+  output: release/${version}
+
+files:
+  - dist/**
+  - package.json
+  - "!dist/**/*.map"
+
+extraResources:
+  - from: resources/models
+    to: models
+    filter:
+      - "**/*"
+
+asarUnpack:
+  - node_modules/onnxruntime-node/**
+  - node_modules/sharp/**
+
+win:
+  target:
+    - nsis
+
+nsis:
+  artifactName: ${productName}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always

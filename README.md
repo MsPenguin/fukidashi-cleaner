@@ -14,7 +14,8 @@ Electron desktop app for removing speech-bubble text from images with a local ON
 
 - Electron
 - React 19
-- Vite
+- electron-vite
+- electron-builder
 - TypeScript
 - `onnxruntime-node`
 - `sharp`
@@ -27,10 +28,13 @@ src/
   preload/     Safe bridge for renderer <-> IPC
   renderer/    React UI
   shared/      Shared types
+electron.vite.config.ts
+electron-builder.yml
 resources/
   fonts/       UI fonts bundled through the renderer build
   models/      ONNX models and config files
 dist/          Build output
+release/       Packaged artifacts from electron-builder
 ```
 
 ## Requirements
@@ -47,23 +51,60 @@ yarn install
 
 ## Run
 
-Development:
+Development with renderer HMR and Electron hot reload:
 
 ```bash
 yarn dev
 ```
 
-Production-style local run:
+Type-check only:
+
+```bash
+yarn typecheck
+```
+
+Production build output only:
+
+```bash
+yarn build
+```
+
+Preview the production build in Electron:
+
+```bash
+yarn preview
+```
+
+Build and then preview in one step:
 
 ```bash
 yarn start
 ```
 
-Build only:
+## Packaging
+
+Create an unpacked desktop app:
 
 ```bash
-yarn build
+yarn dist:dir
 ```
+
+Create installer artifacts with electron-builder:
+
+```bash
+yarn dist
+```
+
+Windows installer only:
+
+```bash
+yarn dist:win
+```
+
+Notes:
+
+- Native modules are rebuilt through `electron-builder install-app-deps` on install.
+- Runtime ONNX models are copied into the packaged app via `extraResources`, so the app continues to resolve them from `process.resourcesPath/models`.
 
 ## Model Files
 
@@ -94,7 +135,7 @@ Notes:
 
 ## Font Asset Handling
 
-UI fonts live in `resources/fonts` and are referenced from `src/renderer/styles.css` with relative asset URLs so Vite can include them in both dev and build output.
+UI fonts live in `resources/fonts` and are referenced from `src/renderer/styles.css` with relative asset URLs so the renderer bundle includes them in both dev and production builds.
 
 ## Current Workflow
 
@@ -108,4 +149,4 @@ UI fonts live in `resources/fonts` and are referenced from `src/renderer/styles.
 
 - The UI currently exposes a `4096 bucket 허용` toggle, but the renderer checkbox is not yet wired into the processing request.
 - The app is focused on local desktop processing and does not upload images anywhere.
-- There is no packaged installer flow documented yet.
+- `resources/models` is intentionally gitignored, so packaging only works on machines where the ONNX models are already present locally.

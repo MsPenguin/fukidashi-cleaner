@@ -9,12 +9,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "vite/client"
     ],
     "sourceMap": true,
     "jsx": "react-jsx"
   },
   "include": [
+    "src/**/*.d.ts",
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",

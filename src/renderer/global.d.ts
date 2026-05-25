@@ -6,6 +6,8 @@ import type {
   RemoveTextWorkerState,
 } from "../shared/image-types";
 
+declare module "*.css";
+
 declare global {
   interface Window {
     imageAgent: {
