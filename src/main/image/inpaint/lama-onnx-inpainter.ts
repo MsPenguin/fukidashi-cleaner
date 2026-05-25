@@ -63,7 +63,12 @@ export async function inpaintWithLama(params: {
   } catch (error) {
     console.warn("DirectML LaMa execution failed. Retrying on CPU.", error);
     dmlUnavailableModelPaths.add(modelPath);
-    result = await runLamaOnCpu(modelPath, bucket.size, bucket.fileName, inputs);
+    result = await runLamaOnCpu(
+      modelPath,
+      bucket.size,
+      bucket.fileName,
+      inputs,
+    );
   }
 
   const outputName = Object.keys(result)[0] ?? "";
@@ -156,12 +161,23 @@ function assertNchwShape(
     metadata.type !== "float32" ||
     !shape ||
     shape.length !== 4 ||
-    shape[1] !== channels ||
-    shape[2] !== bucketSize ||
-    shape[3] !== bucketSize
+    !isCompatibleDimension(shape[1], channels) ||
+    !isCompatibleDimension(shape[2], bucketSize) ||
+    !isCompatibleDimension(shape[3], bucketSize)
   ) {
     throw new Error(
       `${label} must be float32 [batch,${channels},${bucketSize},${bucketSize}].`,
     );
   }
+}
+
+function isCompatibleDimension(
+  actual: number | string | undefined,
+  expected: number,
+) {
+  return (
+    actual === expected ||
+    typeof actual === "string" ||
+    typeof actual === "undefined"
+  );
 }

@@ -1,7 +1,6 @@
 // src/main/image/pipeline/runTextlessPipeline.ts
 
 import path from "node:path";
-import { app } from "electron";
 import type {
   RemoveTextInput,
   RemoveTextResult,
@@ -37,6 +36,9 @@ type ProgressReporter = (progress: PipelineProgress) => void;
 export async function runTextlessPipeline(
   input: RemoveTextInput,
   onProgress?: ProgressReporter,
+  options?: {
+    defaultOutputDirectory?: string;
+  },
 ): Promise<RemoveTextResult> {
   const reportProgress = (progress: PipelineProgress) => {
     onProgress?.(progress);
@@ -91,13 +93,10 @@ export async function runTextlessPipeline(
       message: "검출된 문자가 없어 원본을 저장합니다.",
     });
 
-    const outputPath =
-      input.outputPath ??
-      path.join(
-        app.getPath("userData"),
-        "outputs",
-        `textless-${Date.now()}.png`,
-      );
+    const outputPath = resolveOutputPath(
+      input,
+      options?.defaultOutputDirectory,
+    );
 
     await writePngLossless({
       outputPath,
@@ -207,9 +206,7 @@ export async function runTextlessPipeline(
     message: "파일로 저장하는 중...",
   });
 
-  const outputPath =
-    input.outputPath ??
-    path.join(app.getPath("userData"), "outputs", `textless-${Date.now()}.png`);
+  const outputPath = resolveOutputPath(input, options?.defaultOutputDirectory);
 
   await writePngLossless({
     outputPath,
@@ -226,6 +223,29 @@ export async function runTextlessPipeline(
     changedPixelCount: countMaskPixels(editableMask),
     regions,
   };
+}
+
+function resolveOutputPath(
+  input: RemoveTextInput,
+  defaultOutputDirectory?: string,
+) {
+  if (input.outputPath) {
+    return input.outputPath;
+  }
+
+  const outputDirectory =
+    input.outputDirectory ??
+    defaultOutputDirectory ??
+    path.join(process.cwd(), "outputs");
+  const sourceName = path.parse(input.inputPath).name;
+  const prefix = sanitizeFileNamePart(input.outputPrefix ?? "");
+  const postfix = sanitizeFileNamePart(input.outputPostfix ?? "");
+
+  return path.join(outputDirectory, `${prefix}${sourceName}${postfix}.png`);
+}
+
+function sanitizeFileNamePart(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, "_");
 }
 
 function buildEditableMaskStub(params: {
@@ -372,12 +392,7 @@ function boxesOverlap(a: CropBox, b: CropBox) {
   const aBottom = a.y + a.height - 1;
   const bBottom = b.y + b.height - 1;
 
-  return !(
-    aRight < b.x ||
-    bRight < a.x ||
-    aBottom < b.y ||
-    bBottom < a.y
-  );
+  return !(aRight < b.x || bRight < a.x || aBottom < b.y || bBottom < a.y);
 }
 
 function unionBox(a: CropBox, b: CropBox): CropBox {

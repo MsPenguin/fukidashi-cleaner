@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain, shell } from "electron";
 import { registerImageIpc } from "./ipc/image-ipc";
 import fs from "node:fs";
 
@@ -50,4 +50,19 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+ipcMain.handle("system:open-path", async (_event, targetPath: string) => {
+  const errorMessage = await shell.openPath(targetPath);
+
+  if (errorMessage) {
+    throw new Error(errorMessage);
+  }
+
+  return true;
+});
+
+ipcMain.handle("system:show-item-in-folder", (_event, targetPath: string) => {
+  shell.showItemInFolder(targetPath);
+  return true;
 });

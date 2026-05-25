@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
-import type { RemoveTextInput, RemoveTextResult } from "../shared/image-types";
+import type {
+  RemoveTextInput,
+  RemoveTextResult,
+  RemoveTextWorkerState,
+} from "../shared/image-types";
 
 function toFileUrl(p: string) {
   let s = p.replace(/\\/g, "/");
@@ -24,8 +28,35 @@ contextBridge.exposeInMainWorld("imageAgent", {
     return ipcRenderer.invoke("image:select-files");
   },
 
+  selectOutputDirectory(): Promise<string | null> {
+    return ipcRenderer.invoke("image:select-output-directory");
+  },
+
   removeText(payload: RemoveTextInput): Promise<RemoveTextResult> {
     return ipcRenderer.invoke("image:remove-text", payload);
+  },
+
+  cancelRemoveText(): Promise<boolean> {
+    return ipcRenderer.invoke("image:cancel-remove-text");
+  },
+
+  openPath(targetPath: string): Promise<boolean> {
+    if (!targetPath) {
+      return Promise.reject(new Error("targetPath is required"));
+    }
+    return ipcRenderer.invoke("image:open-path", targetPath);
+  },
+
+  // Backwards-compatible alias used in some places/tests.
+  showItemInFolder(path: string): Promise<boolean> {
+    return this.openPath(path as unknown as string);
+  },
+
+  openOutputDirectory(maybePath?: string): Promise<boolean> {
+    return ipcRenderer.invoke(
+      "image:open-output-directory",
+      maybePath ?? undefined,
+    );
   },
 
   resolveToFileUrl(p: string) {
@@ -58,6 +89,21 @@ contextBridge.exposeInMainWorld("imageAgent", {
 
     return () => {
       ipcRenderer.removeListener("image:remove-text-progress", listener);
+    };
+  },
+
+  onRemoveTextState(callback: (state: RemoveTextWorkerState) => void) {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      state: RemoveTextWorkerState,
+    ) => {
+      callback(state);
+    };
+
+    ipcRenderer.on("image:remove-text-state", listener);
+
+    return () => {
+      ipcRenderer.removeListener("image:remove-text-state", listener);
     };
   },
 });

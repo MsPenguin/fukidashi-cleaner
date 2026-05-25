@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import * as ort from "onnxruntime-node";
-import { app } from "electron";
+import { getResourcesRoot } from "../image/model/model-path";
 
 type SessionKey = "textDetector" | "inpainter";
 
@@ -22,11 +22,7 @@ const modelFiles: Record<
 };
 
 function modelRootPath() {
-  const basePath = app.isPackaged
-    ? process.resourcesPath
-    : path.resolve(process.cwd(), "resources");
-
-  return basePath;
+  return getResourcesRoot();
 }
 
 function modelPath(relativePath: string) {
