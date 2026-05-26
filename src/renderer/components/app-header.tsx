@@ -30,10 +30,7 @@ export default function AppHeader({
         >
           {isRunning ? "처리 중..." : "문자 제거"}
         </button>
-        <button
-          onClick={() => void onCancel()}
-          disabled={!isRunning}
-        >
+        <button onClick={() => void onCancel()} disabled={!isRunning}>
           취소
         </button>
         <button

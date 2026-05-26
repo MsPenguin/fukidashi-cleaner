@@ -1,6 +1,6 @@
 {
   "name": "fukidashi-cleaner",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Electron desktop app for removing speech-bubble text from images with a local ONNX pipeline.",
   "private": true,
   "packageManager": "yarn@4.15.0",
@@ -14,9 +14,9 @@
     "preview": "electron-vite preview",
     "start": "yarn build && electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "dist:dir": "yarn build && electron-builder --dir --config electron-builder.yml",
-    "dist": "yarn build && electron-builder --config electron-builder.yml",
-    "dist:win": "yarn build && electron-builder --win --config electron-builder.yml",
+    "dist:dir": "yarn build && node scripts/run-electron-builder.js --dir",
+    "dist": "yarn build && node scripts/run-electron-builder.js",
+    "dist:win": "yarn build && node scripts/run-electron-builder.js --win",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {

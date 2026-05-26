@@ -14,11 +14,13 @@ export default function App() {
     handleDroppedFiles,
     handleImageError,
     handleOpenOutput,
+    handleOutputSettingsChange,
     handlePickOutputDirectory,
     handleProcessAll,
     handleRemoveCompletedFiles,
     handleRemoveItem,
     handleSelectFiles,
+    handleSelectItem,
     isBridgeReady,
     isRunning,
     completedCount,
@@ -29,8 +31,6 @@ export default function App() {
     queueCount,
     selected,
     selectedIndex,
-    setOutputSettings,
-    setSelectedIndex,
     selectedAfterUrl,
     workerState,
     workerStatusMessage,
@@ -56,25 +56,12 @@ export default function App() {
       <OutputSettingsPanel
         isBridgeReady={isBridgeReady}
         onDirectoryChange={(directory) =>
-          setOutputSettings((currentSettings) => ({
-            ...currentSettings,
-            directory,
-          }))
+          handleOutputSettingsChange({ directory })
         }
         onOpenOutput={handleOpenOutput}
         onPickOutputDirectory={handlePickOutputDirectory}
-        onPostfixChange={(postfix) =>
-          setOutputSettings((currentSettings) => ({
-            ...currentSettings,
-            postfix,
-          }))
-        }
-        onPrefixChange={(prefix) =>
-          setOutputSettings((currentSettings) => ({
-            ...currentSettings,
-            prefix,
-          }))
-        }
+        onPostfixChange={(postfix) => handleOutputSettingsChange({ postfix })}
+        onPrefixChange={(prefix) => handleOutputSettingsChange({ prefix })}
         outputPreviewName={outputPreviewName}
         outputSettings={outputSettings}
       />
@@ -90,7 +77,7 @@ export default function App() {
         items={items}
         selectedIndex={selectedIndex}
         onRemove={handleRemoveItem}
-        onSelect={setSelectedIndex}
+        onSelect={handleSelectItem}
       />
 
       <BeforeAfterViewer

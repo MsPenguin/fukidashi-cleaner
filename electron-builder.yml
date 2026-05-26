@@ -2,7 +2,7 @@ appId: com.fukidashi.cleaner
 productName: Fukidashi Cleaner
 
 directories:
-  output: release/${version}
+  output: ${env.EB_OUTPUT_DIR}
 
 files:
   - dist/**
