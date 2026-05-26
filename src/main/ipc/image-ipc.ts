@@ -1,4 +1,5 @@
 import { dialog, ipcMain, app } from "electron";
+import fs from "node:fs/promises";
 import path from "node:path";
 import type {
   RemoveTextInput,
@@ -11,6 +12,30 @@ import {
 } from "../services/remove-text-worker";
 
 export function registerImageIpc() {
+  ipcMain.handle(
+    "image:read-image-as-data-url",
+    async (_event, filePath: string) => {
+      const buffer = await fs.readFile(filePath);
+      const extension = path.extname(filePath).toLowerCase();
+      const mimeType =
+        extension === ".jpg" || extension === ".jpeg"
+          ? "image/jpeg"
+          : extension === ".png"
+            ? "image/png"
+            : extension === ".webp"
+              ? "image/webp"
+              : extension === ".gif"
+                ? "image/gif"
+                : extension === ".bmp"
+                  ? "image/bmp"
+                  : extension === ".tif" || extension === ".tiff"
+                    ? "image/tiff"
+                    : "application/octet-stream";
+
+      return `data:${mimeType};base64,${buffer.toString("base64")}`;
+    },
+  );
+
   ipcMain.handle("image:select-file", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile"],

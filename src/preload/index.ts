@@ -1,3 +1,4 @@
+import path from "node:path";
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type {
   RemoveTextInput,
@@ -9,6 +10,29 @@ function toFileUrl(p: string) {
   let s = p.replace(/\\/g, "/");
   if (/^[a-zA-Z]:\//.test(s)) s = "/" + s;
   return `file://${encodeURI(s)}`;
+}
+
+function getMimeType(filePath: string) {
+  const extension = path.extname(filePath).toLowerCase();
+
+  switch (extension) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    case ".gif":
+      return "image/gif";
+    case ".bmp":
+      return "image/bmp";
+    case ".tif":
+    case ".tiff":
+      return "image/tiff";
+    default:
+      return "application/octet-stream";
+  }
 }
 
 // Log preload startup for diagnostics in main/renderer logs.
@@ -61,6 +85,10 @@ contextBridge.exposeInMainWorld("imageAgent", {
 
   resolveToFileUrl(p: string) {
     return toFileUrl(p);
+  },
+
+  readImageAsDataUrl(filePath: string) {
+    return ipcRenderer.invoke("image:read-image-as-data-url", filePath);
   },
 
   getPathForFile: (file: File) => webUtils.getPathForFile(file),

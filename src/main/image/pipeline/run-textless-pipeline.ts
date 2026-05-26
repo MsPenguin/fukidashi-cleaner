@@ -128,13 +128,16 @@ export async function runTextlessPipeline(
     regions,
   });
 
-  // Use a single conservative context padding to ensure high-quality, lossless
-  // inpainting around text regions. We no longer offer `fast`/`quality` modes.
+  // Use a modest context padding so nearby bubbles do not collapse into one
+  // oversized inpaint region.
   const inpaintRegions = planInpaintRegionsStub({
     width: image.width,
     height: image.height,
     regions,
-    contextPadding: 256,
+    contextPadding: Math.max(
+      32,
+      Math.round(Math.min(image.width, image.height) * 0.05),
+    ),
     allowLargeBucket: input.allowLargeBucket ?? true,
   });
 
@@ -256,7 +259,7 @@ function buildEditableMaskStub(params: {
   const { width, height, regions } = params;
   const mask = new Uint8Array(width * height);
 
-  const dilation = 12;
+  const dilation = 6;
 
   for (const region of regions) {
     const x1 = clamp(region.bbox.x - dilation, 0, width - 1);
@@ -423,18 +426,96 @@ function fallbackInpaintCrop(
   crop: { data: Uint8Array; width: number; height: number },
   cropMask: Uint8Array,
 ) {
+  const width = crop.width;
+  const height = crop.height;
   const output = new Uint8Array(crop.data);
-  const average = computeBackgroundAverage(crop.data, cropMask);
 
-  for (let y = 0; y < crop.height; y++) {
-    for (let x = 0; x < crop.width; x++) {
-      const maskIndex = y * crop.width + x;
-      if (cropMask[maskIndex] === 0) continue;
+  // Work on a mutable copy of the mask: 0 = known, non-zero = unknown
+  const mask = new Uint8Array(cropMask);
 
-      const base = maskIndex * 4;
-      output[base] = average[0];
-      output[base + 1] = average[1];
-      output[base + 2] = average[2];
+  const idx = (x: number, y: number) => y * width + x;
+  const inBounds = (x: number, y: number) =>
+    x >= 0 && x < width && y >= 0 && y < height;
+
+  const queue: number[] = [];
+
+  // Initialize queue with masked pixels that touch at least one known neighbor
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = idx(x, y);
+      if (mask[i] === 0) continue;
+
+      let hasKnownNeighbor = false;
+      for (let ny = y - 1; ny <= y + 1 && !hasKnownNeighbor; ny++) {
+        for (let nx = x - 1; nx <= x + 1; nx++) {
+          if (!inBounds(nx, ny) || (nx === x && ny === y)) continue;
+          const ni = idx(nx, ny);
+          if (mask[ni] === 0) {
+            hasKnownNeighbor = true;
+            break;
+          }
+        }
+      }
+
+      if (hasKnownNeighbor) queue.push(i);
+    }
+  }
+
+  // BFS-like propagation from the boundary inward
+  while (queue.length > 0) {
+    const i = queue.shift() as number;
+    if (mask[i] === 0) continue; // already filled
+
+    const x = i % width;
+    const y = Math.floor(i / width);
+
+    let sumR = 0,
+      sumG = 0,
+      sumB = 0,
+      count = 0;
+
+    for (let ny = y - 1; ny <= y + 1; ny++) {
+      for (let nx = x - 1; nx <= x + 1; nx++) {
+        if (!inBounds(nx, ny)) continue;
+        const ni = idx(nx, ny);
+        if (mask[ni] === 0) {
+          const base = ni * 4;
+          sumR += output[base];
+          sumG += output[base + 1];
+          sumB += output[base + 2];
+          count++;
+        }
+      }
+    }
+
+    if (count > 0) {
+      const base = i * 4;
+      output[base] = Math.round(sumR / count);
+      output[base + 1] = Math.round(sumG / count);
+      output[base + 2] = Math.round(sumB / count);
+      output[base + 3] = crop.data[base + 3];
+
+      mask[i] = 0; // mark as filled
+
+      // Push neighboring unknown pixels to be processed next
+      for (let ny = y - 1; ny <= y + 1; ny++) {
+        for (let nx = x - 1; nx <= x + 1; nx++) {
+          if (!inBounds(nx, ny)) continue;
+          const ni = idx(nx, ny);
+          if (mask[ni] !== 0) queue.push(ni);
+        }
+      }
+    }
+  }
+
+  // If anything remains unfilled (isolated holes), fall back to average
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i] !== 0) {
+      const avg = computeBackgroundAverage(crop.data, cropMask);
+      const base = i * 4;
+      output[base] = avg[0];
+      output[base + 1] = avg[1];
+      output[base + 2] = avg[2];
       output[base + 3] = crop.data[base + 3];
     }
   }

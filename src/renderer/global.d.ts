@@ -20,6 +20,7 @@ declare global {
       showItemInFolder(path: string): Promise<boolean>;
       openOutputDirectory: (maybePath?: string) => Promise<boolean>;
       resolveToFileUrl?: (p: string) => string;
+      readImageAsDataUrl: (filePath: string) => Promise<string>;
       getPathForFile: (file: File) => string;
       onRemoveTextProgress: (
         callback: (progress: {

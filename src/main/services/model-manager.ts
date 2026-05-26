@@ -98,7 +98,7 @@ async function createSession(filePath: string) {
 
   try {
     return await ort.InferenceSession.create(filePath, {
-      executionProviders: ["dml", "cpu"],
+      executionProviders: ["webgpu", "cpu"],
     });
   } catch {
     return ort.InferenceSession.create(filePath, {

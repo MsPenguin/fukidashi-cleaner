@@ -10,7 +10,7 @@ import {
   lamaOutputToRgbaCrop,
 } from "./tensor-adapter";
 
-const dmlUnavailableModelPaths = new Set<string>();
+const webgpuUnavailableModelPaths = new Set<string>();
 
 export async function inpaintWithLama(params: {
   crop: {
@@ -49,20 +49,36 @@ export async function inpaintWithLama(params: {
   };
 
   let result;
+
+  // Allow forcing CPU execution via env var for debugging: set DEBUG_FORCE_CPU_LAMA=1
+  const forceCpu = process.env.DEBUG_FORCE_CPU_LAMA === "1";
+
   try {
-    result = dmlUnavailableModelPaths.has(modelPath)
-      ? await runLamaOnCpu(modelPath, bucket.size, bucket.fileName, inputs)
-      : await runLamaOnPreferredProvider(
-          modelPath,
-          bucket.size,
-          bucket.fileName,
-          crop.width,
-          crop.height,
-          inputs,
-        );
+    if (forceCpu) {
+      console.log(
+        `[lama] DEBUG_FORCE_CPU_LAMA set — running ${modelPath} on CPU`,
+      );
+      result = await runLamaOnCpu(
+        modelPath,
+        bucket.size,
+        bucket.fileName,
+        inputs,
+      );
+    } else {
+      result = webgpuUnavailableModelPaths.has(modelPath)
+        ? await runLamaOnCpu(modelPath, bucket.size, bucket.fileName, inputs)
+        : await runLamaOnPreferredProvider(
+            modelPath,
+            bucket.size,
+            bucket.fileName,
+            crop.width,
+            crop.height,
+            inputs,
+          );
+    }
   } catch (error) {
-    console.warn("DirectML LaMa execution failed. Retrying on CPU.", error);
-    dmlUnavailableModelPaths.add(modelPath);
+    console.warn("WebGPU LaMa execution failed. Retrying on CPU.", error);
+    webgpuUnavailableModelPaths.add(modelPath);
     result = await runLamaOnCpu(
       modelPath,
       bucket.size,
@@ -102,7 +118,7 @@ async function runLamaOnPreferredProvider(
   };
 
   console.log(
-    `Running LaMa on DirectML: crop=${cropWidth}x${cropHeight}, bucket=${bucketSize}, model=${modelName}`,
+    `Running LaMa on webGPU: crop=${cropWidth}x${cropHeight}, bucket=${bucketSize}, model=${modelName}`,
   );
 
   return session.run(feeds);

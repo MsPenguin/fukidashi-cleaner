@@ -115,6 +115,7 @@ Current repository layout:
 ```text
 resources/models/text-detector/det.onnx
 resources/models/text-detector/config.json
+resources/models/inpaint/lama-1024.onnx
 resources/models/inpaint/lama-2048.onnx
 resources/models/inpaint/lama-3072.onnx
 resources/models/inpaint/lama-4096.onnx

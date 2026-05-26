@@ -83,7 +83,7 @@ async function processQueue() {
 }
 
 function executeQueuedJob(job: QueueItem): Promise<void> {
-  const workerPath = path.join(__dirname, "../workers/remove-text.worker.js");
+  const workerPath = path.join(__dirname, "./workers/remove-text.worker.mjs");
   const inputName = path.basename(job.payload.inputPath);
 
   return new Promise<void>((resolveJob) => {

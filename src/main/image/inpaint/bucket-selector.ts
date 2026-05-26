@@ -1,10 +1,15 @@
 export type LamaBucket = {
   name: string;
-  size: 2048 | 3072 | 4096;
+  size: 1024 | 2048 | 3072 | 4096;
   fileName: string;
 };
 
 export const LAMA_BUCKETS: LamaBucket[] = [
+  {
+    name: "lama-1024",
+    size: 1024,
+    fileName: "lama-1024.onnx",
+  },
   {
     name: "lama-2048",
     size: 2048,
@@ -29,16 +34,20 @@ export function chooseLamaBucket(params: {
 }): LamaBucket | null {
   const required = Math.max(params.width, params.height);
 
-  if (required <= 2048) {
+  if (required <= 1024) {
     return LAMA_BUCKETS[0];
   }
 
-  if (required <= 3072 && params.allowLargeBucket) {
+  if (required <= 2048) {
     return LAMA_BUCKETS[1];
   }
 
-  if (required <= 4096 && params.allowLargeBucket) {
+  if (required <= 3072) {
     return LAMA_BUCKETS[2];
+  }
+
+  if (required <= 4096 && params.allowLargeBucket) {
+    return LAMA_BUCKETS[3];
   }
 
   return null;

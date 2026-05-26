@@ -28,6 +28,36 @@ export default defineConfig(({ mode }) => ({
   main: {
     build: {
       outDir: "dist/main",
+      rollupOptions: {
+        external: ["electron", "onnxruntime-node", "sharp"],
+        input: {
+          main: path.resolve(__dirname, "src/main/index.ts"),
+          "workers/remove-text.worker": path.resolve(
+            __dirname,
+            "src/main/workers/remove-text.worker.ts",
+          ),
+        },
+        plugins: [
+          {
+            name: "main-entry-shim",
+            generateBundle(_options, bundle) {
+              const mainChunk = Object.values(bundle).find(
+                (output) => output.type === "chunk" && output.name === "main",
+              );
+
+              if (!mainChunk || mainChunk.type !== "chunk") {
+                return;
+              }
+
+              this.emitFile({
+                type: "asset",
+                fileName: "index.js",
+                source: `import('./${mainChunk.fileName.replace(/\\/g, "/")}');\n`,
+              });
+            },
+          },
+        ],
+      },
     },
   },
   preload: {
